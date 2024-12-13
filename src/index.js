@@ -4,10 +4,13 @@ import connectDB from "./db/index.js"
 import express from "express"
 
 dotenv.config({
-    path: './env'
+    path: './.env'
 })
 const app=express() 
 
+app.get("/",(req,res)=>{
+    res.send("Hello")
+})
 connectDB()
 .then(()=>{
     app.listen(process.env.PORT || 8000, ()=>{
