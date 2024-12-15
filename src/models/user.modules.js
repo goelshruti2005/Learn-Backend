@@ -46,12 +46,22 @@ const userSchema=new Schema(
     }
 ,{timestamps:true})
 
+
+// This code snippet is a MongoDB Mongoose pre-save hook, designed to hash the user's password before it's saved to the database. This is a crucial security measure to protect user passwords from potential data breaches.
 userSchema.pre("save",async function(next){
     if(!this.isModified("password")) return next();
 
-    this.password=bcrypt.hash(this.password,10)
+    this.password = await bcrypt.hash(this.password,10)
     next()
 })
+
+
+//Post-Save:
+//Executed after the document is saved to the database.
+//Useful for sending notifications, updating related documents, or logging.
+userSchema.post('save', function() {
+    console.log('User saved successfully');
+  });
 
 userSchema.methods.isPasswordCorrect = async function(password){
     return await bcrypt.compare(password,this.password)
@@ -82,5 +92,7 @@ process.env.REFRESH_TOKEN_SECRET,
 }
 )
 }
+//console.log("User Schema : ",userSchema);
 
 export const User =mongoose.model("User",userSchema)
+//console.log("User model :",User);
