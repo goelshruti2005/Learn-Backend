@@ -59,16 +59,16 @@ userSchema.pre("save",async function(next){
 //Post-Save:
 //Executed after the document is saved to the database.
 //Useful for sending notifications, updating related documents, or logging.
-userSchema.post('save', function() {
-    console.log('User saved successfully');
-  });
+// userSchema.post('save', function() {
+//     console.log('User saved successfully');
+//   });
 
 userSchema.methods.isPasswordCorrect = async function(password){
     return await bcrypt.compare(password,this.password)
 }
 
 userSchema.methods.generateAccessToken= function(){
-    return jwt.sign(
+    return  jwt.sign(
         {
         _id: this._id,
         email: this.email,
@@ -81,6 +81,7 @@ userSchema.methods.generateAccessToken= function(){
     }
 )
 }
+
 userSchema.methods.generateRefreshToken= function(){
     return jwt.sign(
     {
