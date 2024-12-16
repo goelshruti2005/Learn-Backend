@@ -51,7 +51,8 @@ const registerUser = asyncHandler( async(req,res)=>{
    //  console.log("Password : ",password);
    //  console.log(req);
    //  console.log(req.body);
-   //  console.log(req.files);
+    console.log("Files : ",req.files);
+    console.log("File : ",req.file);
     
    
 
@@ -152,7 +153,7 @@ const loginUser = asyncHandler(async(req,res)=>{
  //send them into cookies
 
  const {email, username, password} = req.body
-console.log("usernae",username);
+//console.log("usernae",username);
 
 //  if(!username && !email){
 //    throw new ApiError(400,"username or password is required")
@@ -166,7 +167,7 @@ console.log("usernae",username);
    $or: [{username},{email}]
  })
 
- console.log("user :",user);
+ //console.log("user :",user);
  
 
  if(!user){
@@ -186,7 +187,7 @@ const {accessToken, refreshToken} = await generateAccessAndRefreshToken(user._id
 const loggedInUser = await User.findOne(user._Id).select(
    "-password -refreshToken"
 )
-console.log("loggedInUser :",loggedInUser);
+//console.log("loggedInUser :",loggedInUser);
 
 
 const options={
@@ -290,17 +291,24 @@ const refreshAccessToken = asyncHandler(async(req,res)=>{
 
 
 const changeCurrentPassword = asyncHandler(async(req,res)=>{
+   // console.log("Hello");
+   
    const {oldPassword, newPassword} = req.body
   // const {oldPassword, newPassword, confPassword} = req.body
 
    // if(newPassword !== confPassword){
    //    throw new ApiError(400,"Add same password to confirm field")
    // }
+      // console.log(req.body);
+      // console.log(req.user);
+      
+   const user =await User.findOne(req.user?._id)
+   //console.log(user);
    
-   const user = User.findById(req.user?._id)
-   const isPasswordCorrect = await user.isPasswordCorrect(oldPassword)
+      
+   const isPasswordValid = await user.isPasswordCorrect(oldPassword)
 
-   if(!isPasswordCorrect){
+   if(!isPasswordValid){
       throw new ApiError(400,"Invalid old Password")
    }
 
@@ -314,36 +322,60 @@ const changeCurrentPassword = asyncHandler(async(req,res)=>{
 })
 
 const getCurrentUser = asyncHandler(async(req,res)=>{
-   return res.status(200)
-   .json(200,req.user,"Current user fetched successfully")
+ 
+  
+ return res.status(200).json({
+   status: 200,
+   user: req.user,
+   message: "Current user fetched successfully"
+});
 })
 
 const updateAccountDetails = asyncHandler(async(req,res)=>{
    const {fullName, email} = req.body
+   // console.log("Request : ",req.body);
+   
+   
 
-   if(!fullName || !email){
+   if(!fullName && !email){
       throw new ApiError(400,"All fields are required")
    }
+   const user = req.user
+   //  User exist or not
+   if(fullName === user.fullName && email === user.email ){
+      return res.status(200)
+      .json(new ApiResponse(200,user,"No updated field is given"))
+   }
+   //  const existedUser= await User.findOne({email})
 
-   const user = User.findByIdAndUpdate(
-      req.user?._id,
+   //   if(existedUser){
+   //    throw new ApiError(400,"User already exists put another username")
+   //   }
+     console.log(req.user._id);
+
+   const updatedUser =await User.findByIdAndUpdate(
+      user._id,
       {
          $set: {
-            fullName,
+            fullName : fullName,
             email : email
          }
       },
-      {new : true}// if we set it true then we returned new information
+      {
+         new : true
+      }// if we set it true then we returned new information
    ).select("-password ")
 
 return res
 .status(200)
-.json(new ApiResponse(200,user,"Account Details updated successfully"))
+.json(new ApiResponse(200,updatedUser,"Account Details updated successfully"))
 })
 
 const updateUserAvatar = asyncHandler(async(req,res)=>{
    const avatarLocalPath = req.file?.path
+console.log("local path : ",avatarLocalPath);
 
+   //We caan delete old image from cloudinary
    if(!avatarLocalPath){
       throw new ApiError(400,"Avatar file is missing")
    }
@@ -353,6 +385,7 @@ const updateUserAvatar = asyncHandler(async(req,res)=>{
    if(!avatar.url){
       throw new ApiError(400,"Error while uploading on avatar")
    }
+console.log("avatar : ",avatar);
 
    const user = await User.findByIdAndUpdate(
       req.user?._id,
